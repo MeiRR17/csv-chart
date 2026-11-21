@@ -118,11 +118,11 @@ export function prepareChartData(dataset, { type, xIndex, yIndex, aggregate = 'n
 }
 
 /** Escape all cells, including formula-looking strings, for safe spreadsheet export. */
-function csvCell(value) {
+function csvCell(value, spreadsheetLabel = true) {
   let text = String(value ?? '');
   // CSV injection: quote-prefix cells beginning with formulas, allowing
   // spreadsheet viewers to treat them as literals instead of executable text.
-  if (/^[\s]*[=+\-@\t\r\n]/.test(text)) text = "'" + text;
+  if (spreadsheetLabel && /^[\s]*[=+\-@\t\r\n]/.test(text)) text = "'" + text;
   return '"' + text.replaceAll('"', '""') + '"';
 }
 
@@ -135,7 +135,7 @@ export function chartDataCsv(prepared, { xLabel = 'X', yLabel = 'Y' } = {}) {
   if (!prepared || !Array.isArray(prepared.prepared)) throw new TypeError('Expected prepared chart data.');
   const output = [[csvCell(xLabel), csvCell(yLabel), csvCell('Source row count')].join(',')];
   for (const item of prepared.prepared) {
-    output.push([csvCell(item.x), csvCell(item.y), csvCell(item.count)].join(','));
+    output.push([csvCell(item.x), csvCell(item.y, false), csvCell(item.count, false)].join(','));
   }
   return '\uFEFF' + output.join('\r\n') + '\r\n';
 }
