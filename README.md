@@ -21,7 +21,7 @@ Open http://localhost:8000 in your browser. A local HTTP server is recommended b
 - Automatic delimiter detection or manual selection, duplicate and empty column names normalized for display.
 - Column profiling for numeric Y-axis suggestions.
 - **Column quality overview**: per-column missing-cell counts, numeric versus nonnumeric values, exact distinct-value counts and an inferred numeric/text/mixed/empty classification, calculated without uploading source data.
-- Download a JSON **column profile** with column names, counts and inferred classifications; no source cell values are included.
+- Download a **column profile** as JSON or spreadsheet-compatible CSV with column names, counts, completeness percentages and inferred classifications; no source cell values are included. Formula-like column headers are escaped in the CSV to reduce spreadsheet injection risk.
 - Responsive, accessible chart studio with bar (up to 50 points), line (up to 250), and scatter (up to 1,000) charts.
 - SVG axis labels, grid lines, point values and chart title, with XML-escaped data labels.
 - Non-mutating chart-data preparation with grouping by exact X labels, sum/average/count aggregations and optional sort by X or Y.
@@ -42,6 +42,7 @@ Open http://localhost:8000 in your browser. A local HTTP server is recommended b
 - Aggregate operations include only rows with a numeric Y value. Count represents the count of valid numeric Y rows per X category, not every raw CSV row.
 - Each chart retains its readability cap (50 bar, 250 line, 1,000 scatter); the exported chart-data CSV contains **all prepared rows**, not just the first visible plotted points.
 - Exporting chart data may include confidential information if your category labels are sensitive; review downloads before sharing. The column profile excludes **cell values** but includes **column names**, which may still be sensitive.
+- When a file load finishes after the user has edited the source or selected another file, its stale result is ignored. Changing or clearing the chart also cancels any in-flight PNG image conversion so an outdated chart cannot be exported by mistake.
 - This initial implementation has not been run through the owner's centralized test cycle.
 
 ## Structure
@@ -53,6 +54,7 @@ Open http://localhost:8000 in your browser. A local HTTP server is recommended b
 - src/charts.js — accessible, self-contained SVG chart renderer
 - src/transform.js — aggregation, sorting, summary statistics and safe chart-data CSV export
 - src/profile.js — per-column completeness, distinct-count and numeric-consistency analysis
+- src/profile-csv.js — metadata-only CSV export with formula-like header escaping
 
 ## License
 
