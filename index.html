@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0b162a">
+  <meta name="description" content="Turn a CSV into a clear, downloadable chart entirely in your browser. No account, upload or tracking.">
+  <title>CSV Chart Studio — visualize your data privately</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">▥</span><span>CSV<span class="brand-accent">Chart</span></span><span class="brand-tag">studio</span></div>
+    <a href="https://github.com/MeiRR17/csv-chart" target="_blank" rel="noopener noreferrer" class="github-link">View on GitHub ↗</a>
+  </header>
+  <main class="shell">
+    <div class="intro">
+      <div class="eyebrow"><span class="status-dot"></span> PRIVATE BY DESIGN · NO SIGN-IN</div>
+      <h1>Your CSV deserves<br><span>better charts.</span></h1>
+      <p>Paste a table or drop in a file. Choose what matters, then export a beautiful SVG. Everything runs on your device.</p>
+    </div>
+    <div class="workspace">
+      <section class="panel controls-panel" aria-labelledby="data-heading">
+        <div class="panel-heading"><span class="step">01</span><div><h2 id="data-heading">Your data</h2><p>Start from a CSV file or paste its contents.</p></div></div>
+        <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Choose or drop a CSV file">
+          <input id="file" type="file" accept=".csv,.tsv,text/csv,text/tab-separated-values,text/plain" class="sr-only">
+          <span class="drop-icon" aria-hidden="true">↥</span>
+          <strong>Drop your CSV file here</strong>
+          <small>or click to browse · up to 2 MB</small>
+        </div>
+        <div class="field-header"><label for="source">CSV input</label><button class="text-button" id="sample" type="button">Load sample data</button></div>
+        <textarea id="source" rows="8" spellcheck="false" placeholder="month,revenue,orders&#10;Jan,12500,280&#10;Feb,15800,330"></textarea>
+        <div class="fields">
+          <div class="field"><label for="delimiter">Separator</label>
+            <select id="delimiter"><option value="auto">Auto-detect</option><option value=",">Comma (,)</option><option value=";">Semicolon (;)</option><option value="tab">Tab</option><option value="|">Pipe (|)</option></select>
+          </div>
+          <div class="field aligned"><button id="parse" class="button secondary" type="button">Read data <span aria-hidden="true">→</span></button></div>
+        </div>
+        <p id="data-message" class="notice" role="status" aria-live="polite">Add data to begin. Try the example if you don't have a CSV handy.</p>
+
+        <div class="section-rule"></div>
+        <div class="panel-heading small"><span class="step">02</span><div><h2>Chart settings</h2><p>Choose how your data should look.</p></div></div>
+        <fieldset class="chart-type"><legend>Visualization</legend>
+          <label class="choice"><input type="radio" name="type" value="bar" checked><span>▥ <b>Bar</b></span></label>
+          <label class="choice"><input type="radio" name="type" value="line"><span>⌁ <b>Line</b></span></label>
+          <label class="choice"><input type="radio" name="type" value="scatter"><span>∴ <b>Scatter</b></span></label>
+        </fieldset>
+        <div class="fields">
+          <div class="field"><label for="x-column">X axis</label><select id="x-column" disabled><option>Load a CSV first</option></select></div>
+          <div class="field"><label for="y-column">Y axis (numeric)</label><select id="y-column" disabled><option>Load a CSV first</option></select></div>
+        </div>
+        <div class="field"><label for="chart-title">Chart title</label><input id="chart-title" type="text" maxlength="90" value="My chart" placeholder="Describe your data"></div>
+        <button class="button primary" id="render" disabled type="button">Generate chart <span aria-hidden="true">↗</span></button>
+      </section>
+      <section class="output-panel" aria-labelledby="preview-heading">
+        <div class="output-header"><div><span class="eyebrow muted">LIVE PREVIEW</span><h2 id="preview-heading">Chart preview</h2></div>
+          <button id="export" type="button" class="button export" disabled>↓ Export SVG</button></div>
+        <div id="chart" class="chart-stage" aria-live="polite">
+          <div class="empty"><div class="empty-art" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+            <h3>Your chart will appear here</h3><p>Load a CSV and select your axes to visualize it.</p></div>
+        </div>
+        <div class="summary" id="summary"><span><b id="rows">—</b> rows</span><span><b id="columns">—</b> columns</span><span><b id="plotted">—</b> points drawn</span></div>
+        <div class="table-panel">
+          <div class="table-head"><h3>Data preview</h3><span id="table-count">No data loaded</span></div>
+          <div class="table-scroll"><table id="preview-table"><thead></thead><tbody></tbody></table></div>
+        </div>
+      </section>
+    </div>
+    <p class="privacy">🔒 Your data never leaves this browser. All parsing and chart rendering run locally; nothing is sent to a server.</p>
+  </main>
+  <footer><span>CSV Chart Studio · Open source</span><span>Built by <a href="https://github.com/MeiRR17" target="_blank" rel="noopener noreferrer">Meir Dvir</a></span></footer>
+</body>
+</html>
