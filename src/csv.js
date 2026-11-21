@@ -1,6 +1,7 @@
 // No network access, dependencies, or CSV content evaluation.
 const MAX_SOURCE_LENGTH = 2_000_000;
-const MAX_RECORDS = 10_000;
+const MAX_DATA_ROWS = 10_000;
+const MAX_RECORDS = MAX_DATA_ROWS + 1; // Header is not a data row.
 const MAX_COLUMNS = 120;
 const DELIMITERS = [',', ';', '\t', '|'];
 
@@ -72,7 +73,7 @@ export function parseCsv(source, delimiter = 'auto') {
     finishCell();
     if (cells.some(value => value.trim().length > 0)) records.push(cells);
     cells = [];
-    if (records.length > MAX_RECORDS) throw new RangeError('CSV exceeds 10,000 rows.');
+    if (records.length > MAX_RECORDS) throw new RangeError('CSV exceeds 10,000 data rows.');
   }
 
   for (let i = 0; i < source.length; i++) {
