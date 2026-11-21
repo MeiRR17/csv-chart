@@ -272,7 +272,11 @@ document.querySelectorAll('input[name="type"]').forEach(input => input.addEventL
   }
   renderChart();
 }));
-file.addEventListener('change', () => loadFile(file.files[0]));
+file.addEventListener('change', () => {
+  const selected = file.files?.[0];
+  file.value = ''; // Allow importing the same file again after edits.
+  void loadFile(selected);
+});
 dropzone.addEventListener('click', () => file.click());
 dropzone.addEventListener('keydown', event => {
   if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); file.click(); }
@@ -352,8 +356,6 @@ pngButton.addEventListener('click', () => {
       }, 'image/png');
     } catch (error) {
       status('PNG export failed: ' + error.message, 'error');
-    } finally {
-      // Object URL was released immediately after image loading.
     }
   };
   image.onerror = () => {
