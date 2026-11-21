@@ -136,8 +136,8 @@ function renderChart() {
     });
     const result = createChart(prepared.dataset, {
       type,
-      xIndex: Number(xColumn.value),
-      yIndex: Number(yColumn.value),
+      xIndex: 0,
+      yIndex: 1,
       title: get('chart-title').value.trim(),
     });
     // The chart renderer escapes CSV values before building SVG markup.
@@ -257,7 +257,7 @@ dataButton.addEventListener('click', () => {
   if (!lastPrepared || !dataset) return;
   const csv = chartDataCsv(lastPrepared, {
     xLabel: dataset.columns[Number(xColumn.value)],
-    yLabel: lastPrepared.dataset.columns[Number(yColumn.value)],
+    yLabel: lastPrepared.dataset.columns[1],
   });
   download(new Blob([csv], { type: 'text/csv;charset=utf-8' }), 'chart-data.csv');
 });
