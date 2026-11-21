@@ -50,17 +50,42 @@
           <div class="field"><label for="x-column">X axis</label><select id="x-column" disabled><option>Load a CSV first</option></select></div>
           <div class="field"><label for="y-column">Y axis (numeric)</label><select id="y-column" disabled><option>Load a CSV first</option></select></div>
         </div>
+        <div class="fields data-transform-options">
+          <div class="field"><label for="aggregation">Group repeated X labels</label>
+            <select id="aggregation" disabled>
+              <option value="none">None — show each row</option>
+              <option value="sum">Sum of numeric Y</option>
+              <option value="average">Average of numeric Y</option>
+              <option value="count">Count valid rows</option>
+            </select>
+          </div>
+          <div class="field"><label for="sort">Sort points</label>
+            <select id="sort" disabled>
+              <option value="source">Keep CSV order</option>
+              <option value="x-asc">X: ascending</option>
+              <option value="x-desc">X: descending</option>
+              <option value="y-asc">Y: ascending</option>
+              <option value="y-desc">Y: descending</option>
+            </select>
+          </div>
+        </div>
+        <p class="transform-hint">Grouping is available for bar and line charts. Aggregation uses only rows with numeric Y values and groups identical X labels.</p>
         <div class="field"><label for="chart-title">Chart title</label><input id="chart-title" type="text" maxlength="90" value="My chart" placeholder="Describe your data"></div>
         <button class="button primary" id="render" disabled type="button">Generate chart <span aria-hidden="true">↗</span></button>
       </section>
       <section class="output-panel" aria-labelledby="preview-heading">
         <div class="output-header"><div><span class="eyebrow muted">LIVE PREVIEW</span><h2 id="preview-heading">Chart preview</h2></div>
-          <button id="export" type="button" class="button export" disabled>↓ Export SVG</button></div>
+          <div class="export-actions">
+            <button id="export" type="button" class="button export" disabled>↓ SVG</button>
+            <button id="export-png" type="button" class="button export" disabled>↓ PNG</button>
+            <button id="export-data" type="button" class="button export" disabled>↓ Chart CSV</button>
+          </div></div>
         <div id="chart" class="chart-stage" aria-live="polite">
           <div class="empty"><div class="empty-art" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
             <h3>Your chart will appear here</h3><p>Load a CSV and select your axes to visualize it.</p></div>
         </div>
         <div class="summary" id="summary"><span><b id="rows">—</b> rows</span><span><b id="columns">—</b> columns</span><span><b id="plotted">—</b> points drawn</span></div>
+        <div class="prepared-summary" id="chart-statistics" role="status" aria-live="polite">Load a CSV to see chart-data statistics.</div>
         <div class="table-panel">
           <div class="table-head"><h3>Data preview</h3><span id="table-count">No data loaded</span></div>
           <div class="table-scroll"><table id="preview-table"><thead></thead><tbody></tbody></table></div>
