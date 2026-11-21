@@ -86,6 +86,17 @@
         </div>
         <div class="summary" id="summary"><span><b id="rows">—</b> rows</span><span><b id="columns">—</b> columns</span><span><b id="plotted">—</b> points drawn</span></div>
         <div class="prepared-summary" id="chart-statistics" role="status" aria-live="polite">Load a CSV to see chart-data statistics.</div>
+        <section class="column-profile" aria-labelledby="profile-heading">
+          <div class="table-head"><h3 id="profile-heading">Column quality overview</h3>
+            <button id="export-profile" type="button" class="button export" disabled>↓ Export profile JSON</button>
+          </div>
+          <p class="profile-caption">Counts and inferred formats only. The report contains column names, but no original cell values.</p>
+          <p id="profile-summary" class="prepared-summary" role="status">Read a CSV to inspect column completeness and numeric consistency.</p>
+          <div class="table-scroll"><table id="profile-table"><thead><tr>
+            <th scope="col">Column</th><th scope="col">Type</th><th scope="col">Missing</th>
+            <th scope="col">Numeric</th><th scope="col">Distinct</th>
+          </tr></thead><tbody></tbody></table></div>
+        </section>
         <div class="table-panel">
           <div class="table-head"><h3>Data preview</h3><span id="table-count">No data loaded</span></div>
           <div class="table-scroll"><table id="preview-table"><thead></thead><tbody></tbody></table></div>
