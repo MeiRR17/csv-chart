@@ -1,6 +1,7 @@
 import { parseCsv, columnProfile } from './src/csv.js';
 import { createChart } from './src/charts.js';
 import { prepareChartData, chartDataCsv, statisticsText } from './src/transform.js';
+import { profileDataset, profileReport } from './src/profile.js';
 
 const get = id => document.getElementById(id);
 const source = get('source');
@@ -58,6 +59,9 @@ function clearChart() {
 }
 function resetData() {
   dataset = null;
+  get('export-profile').disabled = true;
+  get('profile-table').querySelector('tbody').replaceChildren();
+  get('profile-summary').textContent = 'Read a CSV to inspect column completeness and numeric consistency.';
   xColumn.disabled = yColumn.disabled = renderButton.disabled = true;
   aggregationControl.disabled = sortControl.disabled = true;
   exportButton.disabled = pngButton.disabled = dataButton.disabled = true;
@@ -118,6 +122,35 @@ function previewTable() {
     dataset.rows.length.toLocaleString() + ' rows' +
     (dataset.columns.length > 12 ? ' · first 12 columns' : '');
 }
+function renderColumnProfile() {
+  const profile = profileDataset(dataset);
+  const body = get('profile-table').querySelector('tbody');
+  body.replaceChildren();
+  const fragment = document.createDocumentFragment();
+  for (const column of profile.columns) {
+    const tr = document.createElement('tr');
+    if (column.type === 'mixed' || column.type === 'empty') tr.className = 'profile-warning';
+    for (const value of [
+      column.name, column.type,
+      column.missing.toLocaleString() + ' / ' + column.rows.toLocaleString(),
+      column.numeric.toLocaleString() + ' / ' + column.nonEmpty.toLocaleString(),
+      column.distinct.toLocaleString(),
+    ]) {
+      const td = document.createElement('td');
+      td.textContent = value;
+      tr.append(td);
+    }
+    fragment.append(tr);
+  }
+  body.append(fragment);
+  get('profile-summary').textContent =
+    profile.summary.missingCells.toLocaleString() + ' missing cells · ' +
+    profile.summary.numericColumns.toLocaleString() + ' numeric columns · ' +
+    profile.summary.mixedColumns.toLocaleString() + ' mixed-format columns' +
+    (profile.summary.emptyColumns ? ' · ' +
+      profile.summary.emptyColumns.toLocaleString() + ' entirely empty columns' : '');
+  get('export-profile').disabled = false;
+}
 function selectedType() {
   return document.querySelector('input[name="type"]:checked').value;
 }
@@ -167,6 +200,7 @@ function loadData() {
     dataset = parseCsv(source.value, chosenDelimiter);
     populateColumns();
     previewTable();
+    renderColumnProfile();
     renderButton.disabled = false;
     get('rows').textContent = dataset.rows.length.toLocaleString();
     get('columns').textContent = dataset.columns.length.toLocaleString();
@@ -247,6 +281,13 @@ function download(blob, filename) {
   link.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
+
+get('export-profile').addEventListener('click', () => {
+  if (!dataset) return;
+  const report = profileReport(dataset);
+  download(new Blob([report], { type: 'application/json;charset=utf-8' }), 'csv-column-profile.json');
+  status('Column profile exported locally. The report includes column names but no source cell values.', 'success');
+});
 
 exportButton.addEventListener('click', () => {
   if (!lastSvg) return;
