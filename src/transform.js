@@ -86,19 +86,15 @@ export function prepareChartData(dataset, { type, xIndex, yIndex, aggregate = 'n
   const values = prepared.map(entry => entry.y);
   const total = values.reduce((sum, value) => sum + value, 0);
   if (!Number.isFinite(total)) throw new RangeError('The total is outside the supported numeric range.');
-  const dataRows = prepared.map(entry => {
-    const row = Array(dataset.columns.length).fill('');
-    row[xIndex] = String(entry.x);
-    row[yIndex] = String(entry.y);
-    return row;
-  });
-  // Reuse existing SVG chart renderer by preserving the selected column indexes.
-  const columns = [...dataset.columns];
-  if (aggregate !== 'none') {
-    columns[yIndex] = ({
+  // Use a compact two-column chart view to avoid copying unrelated fields.
+  // Separate columns also preserve data when the same source field is X and Y.
+  const dataRows = prepared.map(entry => [String(entry.x), String(entry.y)]);
+  const columns = [
+    dataset.columns[xIndex],
+    aggregate === 'none' ? dataset.columns[yIndex] : ({
       sum: 'Sum of ', average: 'Average of ', count: 'Count of ',
-    })[aggregate] + columns[yIndex];
-  }
+    })[aggregate] + dataset.columns[yIndex],
+  ];
   return {
     dataset: { columns, rows: dataRows },
     prepared,
