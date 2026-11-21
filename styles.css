@@ -11,3 +11,6 @@
 .column-profile .prepared-summary{border:0;border-radius:8px;margin:0 0 12px;padding:12px}
 .profile-warning td:nth-child(2){color:#b7792d;font-weight:800}
 @media(max-width:520px){.column-profile{padding:16px}.column-profile .table-head button{width:100%}}
+
+/* Export the aggregate column-quality report as JSON or CSV. */
+.column-profile .profile-actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.column-profile .profile-actions .button{font-size:12px;padding:9px 12px}.column-profile .profile-actions .button:focus-visible{outline:2px solid #477fe0;outline-offset:2px}@media(max-width:520px){.column-profile .profile-actions{width:100%}.column-profile .profile-actions .button{flex:1 1 130px}}
