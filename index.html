@@ -88,7 +88,10 @@
         <div class="prepared-summary" id="chart-statistics" role="status" aria-live="polite">Load a CSV to see chart-data statistics.</div>
         <section class="column-profile" aria-labelledby="profile-heading">
           <div class="table-head"><h3 id="profile-heading">Column quality overview</h3>
-            <button id="export-profile" type="button" class="button export" disabled>↓ Export profile JSON</button>
+            <div class="profile-actions">
+              <button id="export-profile" type="button" class="button export" disabled>↓ Profile JSON</button>
+              <button id="export-profile-csv" type="button" class="button export" disabled>↓ Profile CSV</button>
+            </div>
           </div>
           <p class="profile-caption">Counts and inferred formats only. The report contains column names, but no original cell values.</p>
           <p id="profile-summary" class="prepared-summary" role="status">Read a CSV to inspect column completeness and numeric consistency.</p>
