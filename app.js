@@ -2,6 +2,7 @@ import { parseCsv, columnProfile } from './src/csv.js';
 import { createChart } from './src/charts.js';
 import { prepareChartData, chartDataCsv, statisticsText } from './src/transform.js';
 import { profileDataset, profileReport } from './src/profile.js';
+import { profileCsv } from './src/profile-csv.js';
 
 const get = id => document.getElementById(id);
 const source = get('source');
@@ -36,12 +37,15 @@ const sample = [
 let dataset = null;
 let lastSvg = '';
 let lastPrepared = null;
+let dataRevision = 0;
+let chartRevision = 0;
 
 function status(text, type = '') {
   message.textContent = text;
   message.className = 'notice' + (type ? ' ' + type : '');
 }
 function clearChart() {
+  chartRevision++;
   lastSvg = '';
   lastPrepared = null;
   exportButton.disabled = pngButton.disabled = dataButton.disabled = true;
@@ -59,7 +63,7 @@ function clearChart() {
 }
 function resetData() {
   dataset = null;
-  get('export-profile').disabled = true;
+  get('export-profile').disabled = get('export-profile-csv').disabled = true;
   get('profile-table').querySelector('tbody').replaceChildren();
   get('profile-summary').textContent = 'Read a CSV to inspect column completeness and numeric consistency.';
   xColumn.disabled = yColumn.disabled = renderButton.disabled = true;
@@ -149,7 +153,7 @@ function renderColumnProfile() {
     profile.summary.mixedColumns.toLocaleString() + ' mixed-format columns' +
     (profile.summary.emptyColumns ? ' · ' +
       profile.summary.emptyColumns.toLocaleString() + ' entirely empty columns' : '');
-  get('export-profile').disabled = false;
+  get('export-profile').disabled = get('export-profile-csv').disabled = false;
 }
 function selectedType() {
   return document.querySelector('input[name="type"]:checked').value;
@@ -175,6 +179,7 @@ function renderChart() {
     });
     // The chart renderer escapes CSV values before building SVG markup.
     chartStage.innerHTML = result.svg;
+    chartRevision++;
     lastSvg = result.svg;
     lastPrepared = prepared;
     exportButton.disabled = pngButton.disabled = dataButton.disabled = false;
@@ -195,6 +200,7 @@ function renderChart() {
   }
 }
 function loadData() {
+  dataRevision++;
   try {
     const chosenDelimiter = delimiter.value === 'tab' ? '\t' : delimiter.value;
     dataset = parseCsv(source.value, chosenDelimiter);
@@ -216,11 +222,19 @@ function loadData() {
 }
 async function loadFile(upload) {
   if (!upload) return;
-  if (upload.size > 2_000_000) { status('File exceeds the 2 MB limit.', 'error'); return; }
+  const revision = ++dataRevision;
+  resetData();
+  if (upload.size > 2_000_000) {
+    status('File exceeds the 2 MB limit.', 'error');
+    return;
+  }
   try {
-    source.value = await upload.text();
+    const text = await upload.text();
+    if (revision !== dataRevision) return; // Do not override later edits/files.
+    source.value = text;
     loadData();
   } catch {
+    if (revision !== dataRevision) return;
     resetData();
     status('This file could not be read.', 'error');
   }
@@ -235,12 +249,14 @@ get('sample').addEventListener('click', () => {
   loadData();
 });
 source.addEventListener('input', () => {
+  dataRevision++;
   if (dataset) {
     resetData();
     status('CSV changed. Click “Read data” to use the new values.');
   }
 });
 delimiter.addEventListener('change', () => {
+  dataRevision++;
   if (dataset) {
     resetData();
     status('Separator changed. Click “Read data” to parse the values again.');
@@ -288,6 +304,12 @@ get('export-profile').addEventListener('click', () => {
   download(new Blob([report], { type: 'application/json;charset=utf-8' }), 'csv-column-profile.json');
   status('Column profile exported locally. The report includes column names but no source cell values.', 'success');
 });
+get('export-profile-csv').addEventListener('click', () => {
+  if (!dataset) return;
+  const report = profileCsv(dataset);
+  download(new Blob([report], { type: 'text/csv;charset=utf-8' }), 'csv-column-profile.csv');
+  status('Column profile CSV exported. It includes column names and counts, not cell values.', 'success');
+});
 
 exportButton.addEventListener('click', () => {
   if (!lastSvg) return;
@@ -306,9 +328,12 @@ dataButton.addEventListener('click', () => {
 pngButton.addEventListener('click', () => {
   if (!lastSvg) return;
   const sourceSvg = lastSvg;
+  const capturedRevision = chartRevision;
   const svgUrl = URL.createObjectURL(new Blob([sourceSvg], { type: 'image/svg+xml;charset=utf-8' }));
   const image = new Image();
   image.onload = () => {
+    URL.revokeObjectURL(svgUrl);
+    if (capturedRevision !== chartRevision) return;
     try {
       const canvas = document.createElement('canvas');
       canvas.width = 1920;
@@ -319,6 +344,7 @@ pngButton.addEventListener('click', () => {
       context.fillRect(0, 0, canvas.width, canvas.height);
       context.drawImage(image, 0, 0, canvas.width, canvas.height);
       canvas.toBlob(blob => {
+        if (capturedRevision !== chartRevision) return;
         if (blob) {
           download(blob, 'csv-chart.png');
           status('PNG export created in the browser.', 'success');
@@ -327,11 +353,12 @@ pngButton.addEventListener('click', () => {
     } catch (error) {
       status('PNG export failed: ' + error.message, 'error');
     } finally {
-      URL.revokeObjectURL(svgUrl);
+      // Object URL was released immediately after image loading.
     }
   };
   image.onerror = () => {
     URL.revokeObjectURL(svgUrl);
+    if (capturedRevision !== chartRevision) return;
     status('The browser could not read the generated SVG for PNG export.', 'error');
   };
   image.src = svgUrl;
