@@ -25,7 +25,7 @@ Open http://localhost:8000 in your browser. A local HTTP server is recommended b
 - Responsive, accessible chart studio with bar (up to 50 points), line (up to 250), and scatter (up to 1,000) charts.
 - SVG axis labels, grid lines, point values and chart title, with XML-escaped data labels.
 - Non-mutating chart-data preparation with grouping by exact X labels, sum/average/count aggregations and optional sort by X or Y.
-- Prepared-value statistics: number of categories or records, minimum, maximum and mean; invalid numeric rows are counted and excluded explicitly.
+- Prepared-series statistics: number of categories or records, minimum, **median**, mean, **90th percentile (P90)** and maximum. Median and P90 use linear interpolation between ordered values and apply to the prepared Y series (category aggregates when grouping), not the omitted/invalid source rows.
 - Export the current chart as vector SVG or 2× resolution raster PNG (1920 × 1000) entirely in the browser.
 - Export the prepared X/Y series as a UTF-8 CSV with a BOM and formula-like text-label escaping so spreadsheet software does not execute CSV labels as formulas.
 - Drag and drop, file picker, editable text input, sample data, 8-row table preview and SVG download.
@@ -35,7 +35,7 @@ Open http://localhost:8000 in your browser. A local HTTP server is recommended b
 ## Limits and assumptions
 
 - Input must include a header row and at least one data row, with consistent column counts.
-- Pasted input is limited to 2,000,000 characters; file uploads are limited to 2 MB; maximum 10,000 records and 120 columns.
+- Pasted input is limited to 2,000,000 characters; file uploads are limited to 2 MB; maximum **10,000 data rows plus one header** and 120 columns.
 - Numeric cells accept finite decimal notation with a period decimal separator, including scientific notation. Currency symbols and locale-formatted values are not silently coerced.
 - Column profiling uses the existing 10,000-row/120-column parser bounds. Uniqueness counts compare trimmed text values exactly and are *not* deduplication recommendations; format classification is not an accuracy or data-quality certification.
 - Row order is preserved by default for bar and line charts; the sort menu can change it. Scatter uses numeric X coordinates and does not permit grouping.
