@@ -84,6 +84,16 @@ export function prepareChartData(dataset, { type, xIndex, yIndex, aggregate = 'n
   }
 
   const values = prepared.map(entry => entry.y);
+  // Quantiles apply to the displayed prepared series: individual Y values
+  // when ungrouped, per-category aggregates when grouping is selected.
+  const ordered = [...values].sort((left, right) => left - right);
+  const percentile = fraction => {
+    const offset = (ordered.length - 1) * fraction;
+    const index = Math.floor(offset);
+    const next = Math.min(index + 1, ordered.length - 1);
+    const weight = offset - index;
+    return ordered[index] * (1 - weight) + ordered[next] * weight;
+  };
   const total = values.reduce((sum, value) => sum + value, 0);
   if (!Number.isFinite(total)) throw new RangeError('The total is outside the supported numeric range.');
   // Use a compact two-column chart view to avoid copying unrelated fields.
@@ -109,6 +119,8 @@ export function prepareChartData(dataset, { type, xIndex, yIndex, aggregate = 'n
       max: Math.max(...values),
       total,
       mean: total / values.length,
+      median: percentile(0.5),
+      p90: percentile(0.9),
     },
   };
 }
@@ -138,6 +150,8 @@ export function chartDataCsv(prepared, { xLabel = 'X', yLabel = 'Y' } = {}) {
 
 export function statisticsText(stats) {
   return 'Min ' + numberFormat.format(stats.min) +
-    ' · Max ' + numberFormat.format(stats.max) +
-    ' · Mean ' + numberFormat.format(stats.mean);
+    ' · Median ' + numberFormat.format(stats.median) +
+    ' · Mean ' + numberFormat.format(stats.mean) +
+    ' · P90 ' + numberFormat.format(stats.p90) +
+    ' · Max ' + numberFormat.format(stats.max);
 }
