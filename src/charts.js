@@ -18,6 +18,13 @@ function bounds(values, includeZero) {
   if (includeZero) { low = Math.min(0, low); high = Math.max(0, high); }
   if (low === high) { low -= Math.max(1, Math.abs(low) * 0.1); high += Math.max(1, Math.abs(high) * 0.1); }
   else if (!includeZero) { const gap = (high - low) * 0.09; low -= gap; high += gap; }
+  // Finite input values can still produce an infinite span or bounds during
+  // padding (for example values near Number.MAX_VALUE). Fail explicitly
+  // rather than exporting an SVG containing NaN/Infinity coordinates.
+  if (!Number.isFinite(low) || !Number.isFinite(high) ||
+      !Number.isFinite(high - low) || high <= low) {
+    throw new RangeError('Chart values span an unsupported numeric range. Narrow the data values.');
+  }
   return [low, high];
 }
 function coordinate(value, low, high, total) { return (value - low) * total / (high - low); }

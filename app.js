@@ -229,7 +229,17 @@ async function loadFile(upload) {
     return;
   }
   try {
-    const text = await upload.text();
+    // Blob.text() replaces malformed UTF-8 bytes with U+FFFD, silently
+    // changing labels and values. Decode strictly so imported data is exact.
+    const bytes = await upload.arrayBuffer();
+    if (revision !== dataRevision) return;
+    let text;
+    try {
+      text = new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+    } catch {
+      status('CSV files must be valid UTF-8. Convert the file to UTF-8 and try again.', 'error');
+      return;
+    }
     if (revision !== dataRevision) return; // Do not override later edits/files.
     source.value = text;
     loadData();
@@ -263,6 +273,14 @@ delimiter.addEventListener('change', () => {
   }
 });
 [xColumn, yColumn, get('chart-title'), aggregationControl, sortControl].forEach(element => element.addEventListener('change', renderChart));
+// Text entry fires 'input' long before 'change' (which often waits for blur).
+// Invalidate downloadable SVG/PNG/CSV immediately so none can misrepresent
+// an edited title. The existing 'change' handler renders the finished title.
+get('chart-title').addEventListener('input', () => {
+  if (!dataset) return;
+  clearChart();
+  status('Chart title changed. Finish editing or choose Render chart to update the preview.');
+});
 document.querySelectorAll('input[name="type"]').forEach(input => input.addEventListener('change', () => {
   if (!dataset) return;
   aggregationControl.disabled = selectedType() === 'scatter';

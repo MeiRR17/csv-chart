@@ -17,7 +17,7 @@ Open http://localhost:8000 in your browser. A local HTTP server is recommended b
 
 ## Features
 
-- CSV parser supporting quoted commas, embedded newlines, escaped quotation marks, CRLF/LF, UTF-8 BOM, and comma/semicolon/tab/pipe separators.
+- CSV parser supporting quoted commas, embedded newlines, escaped quotation marks, CRLF/LF, UTF-8 BOM, and comma/semicolon/tab/pipe separators. File uploads use **strict UTF-8 decoding**: invalid byte sequences are rejected instead of silently replacing characters in labels or values.
 - Automatic delimiter detection or manual selection, duplicate and empty column names normalized for display.
 - Column profiling for numeric Y-axis suggestions.
 - **Column quality overview**: per-column missing-cell counts, numeric versus nonnumeric values, exact distinct-value counts and an inferred numeric/text/mixed/empty classification, calculated without uploading source data.
@@ -29,7 +29,7 @@ Open http://localhost:8000 in your browser. A local HTTP server is recommended b
 - Export the current chart as vector SVG or 2× resolution raster PNG (1920 × 1000) entirely in the browser.
 - Export the prepared X/Y series as a UTF-8 CSV with a BOM and formula-like text-label escaping so spreadsheet software does not execute CSV labels as formulas.
 - Drag and drop, file picker, editable text input, sample data, 8-row table preview and SVG download.
-- Explicit messages for malformed CSV, skipped values and point limits.
+- Explicit messages for malformed CSV, skipped values and point limits. Extreme finite numbers that would generate non-finite SVG axis coordinates now fail with a clear range error rather than malformed artwork.
 - No data is uploaded or transmitted by the app. Parsing and rendering happen locally.
 
 ## Limits and assumptions
@@ -42,7 +42,7 @@ Open http://localhost:8000 in your browser. A local HTTP server is recommended b
 - Aggregate operations include only rows with a finite numeric Y value. Count represents the count of valid numeric Y rows per X category, not every raw CSV row. Minimum and maximum select the smallest/largest finite Y value for each exact X category. Count/minimum/maximum do not calculate intermediate sums, so they do not fail solely because the sum of large values would overflow.
 - Each chart retains its readability cap (50 bar, 250 line, 1,000 scatter); the exported chart-data CSV contains **all prepared rows**, not just the first visible plotted points.
 - Exporting chart data may include confidential information if your category labels are sensitive; review downloads before sharing. The column profile excludes **cell values** but includes **column names**, which may still be sensitive.
-- When a file load finishes after the user has edited the source or selected another file, its stale result is ignored. Changing or clearing the chart also cancels any in-flight PNG image conversion so an outdated chart cannot be exported by mistake.
+- When a file load finishes after the user has edited the source or selected another file, its stale result is ignored. Editing the chart title immediately invalidates prior SVG/PNG/chart-data exports even before the title field loses focus; the completed title is rendered on change. Changing or clearing the chart also cancels any in-flight PNG image conversion so an outdated chart cannot be exported by mistake.
 - This initial implementation has not been run through the owner's centralized test cycle.
 
 ## Structure
