@@ -164,3 +164,45 @@ export function statisticsText(stats) {
     ' · P90 ' + numberFormat.format(stats.p90) +
     ' · Max ' + numberFormat.format(stats.max);
 }
+
+
+/**
+ * Privacy-reduced export of statistics for the prepared chart series.
+ * No source rows, X values, column names, text labels or chart title.
+ * Metrics can themselves be sensitive and must be reviewed before sharing.
+ */
+export function chartStatisticsJson(prepared, { plotted } = {}) {
+  if (!prepared || typeof prepared !== 'object' || !Array.isArray(prepared.prepared) ||
+      !prepared.statistics || !Number.isSafeInteger(prepared.sourceCount) ||
+      prepared.sourceCount < 1 || !Number.isSafeInteger(prepared.discarded) ||
+      prepared.discarded < 0 || prepared.discarded >= prepared.sourceCount ||
+      !AGGREGATES.has(prepared.aggregate) || !SORTS.has(prepared.sort) ||
+      typeof prepared.grouped !== 'boolean' ||
+      prepared.grouped !== (prepared.aggregate !== 'none')) {
+    throw new TypeError('Expected valid prepared chart data.');
+  }
+  const stats = prepared.statistics;
+  const preparedPoints = prepared.prepared.length;
+  if (preparedPoints < 1 || preparedPoints > prepared.sourceCount ||
+      !Number.isSafeInteger(plotted) || plotted < 1 || plotted > preparedPoints ||
+      stats.count !== preparedPoints ||
+      !['min', 'max', 'total', 'mean', 'median', 'p90'].every(key =>
+        typeof stats[key] === 'number' && Number.isFinite(stats[key]))) {
+    throw new TypeError('Chart statistics are incomplete or outside numeric limits.');
+  }
+  return JSON.stringify({
+    format: 'csv-chart-series-statistics-v1',
+    sourceRows: prepared.sourceCount,
+    excludedRows: prepared.discarded,
+    preparedPoints,
+    plottedPoints: plotted,
+    omittedFromChart: preparedPoints - plotted,
+    aggregation: prepared.aggregate,
+    sort: prepared.sort,
+    statistics: {
+      min: stats.min, median: stats.median, mean: stats.mean,
+      p90: stats.p90, max: stats.max, total: stats.total,
+    },
+    advisory: 'Statistics describe the prepared Y series; grouping changes its meaning. No labels or source records are included. Numeric aggregates may still be sensitive.',
+  }, null, 2) + '\n';
+}

@@ -13,7 +13,7 @@ Open http://localhost:8000 in your browser. A local HTTP server is recommended b
 1. Drop a CSV or TSV file onto the page, or paste CSV text, then choose **Read data**. The **Load sample data** action works without an existing file.
 2. Select Bar, Line, or Scatter. Set the X and Y columns. The Y column must contain numeric values; scatter requires numeric X coordinates too.
 3. Optionally group repeated X labels by **sum**, **average**, **count**, **minimum**, or **maximum**, and sort the chart by X or Y. Scatter plots always use raw numeric points.
-4. Enter a chart title and choose **SVG** or **PNG** for your chart image; **Chart CSV** exports the data behind the current chart.
+4. Enter a chart title and choose **SVG** or **PNG** for your chart image; **Chart CSV** exports the data behind the current chart. **Stats JSON** exports only numeric prepared-series statistics and completeness counts.
 
 ## Features
 
@@ -25,7 +25,8 @@ Open http://localhost:8000 in your browser. A local HTTP server is recommended b
 - Responsive, accessible chart studio with bar (up to 50 points), line (up to 250), and scatter (up to 1,000) charts.
 - SVG axis labels, grid lines, point values and chart title, with XML-escaped data labels.
 - Non-mutating chart-data preparation with grouping by exact X labels, sum/average/count/minimum/maximum aggregations and optional sort by X or Y.
-- Prepared-series statistics: number of categories or records, minimum, **median**, mean, **90th percentile (P90)** and maximum. Median and P90 use linear interpolation between ordered values and apply to the prepared Y series (category aggregates when grouping), not the omitted/invalid source rows.
+- Prepared-series statistics: number of categories or records, minimum, **median**, mean, **90th percentile (P90)** and maximum.
+- Export **Stats JSON** for the current prepared series: counts of source/excluded/prepared/plotted rows, aggregation and sorting modes, minimum, median, mean, P90, maximum and total. It deliberately omits raw CSV records, column names, category labels and chart title; numeric aggregates can still disclose commercially sensitive information. The report is invalidated on chart settings or source edits and never claims to summarize rows excluded by numeric parsing. Median and P90 use linear interpolation between ordered values and apply to the prepared Y series (category aggregates when grouping), not the omitted/invalid source rows.
 - Export the current chart as vector SVG or 2× resolution raster PNG (1920 × 1000) entirely in the browser.
 - Export the prepared X/Y series as a UTF-8 CSV with a BOM and formula-like text-label escaping so spreadsheet software does not execute CSV labels as formulas.
 - Drag and drop, file picker, editable text input, sample data, 8-row table preview and SVG download.
@@ -52,7 +53,7 @@ Open http://localhost:8000 in your browser. A local HTTP server is recommended b
 - app.js — local file reading, interactions, data preview and SVG export
 - src/csv.js — CSV parser, delimiter detection, numeric profiling
 - src/charts.js — accessible, self-contained SVG chart renderer
-- src/transform.js — aggregation, sorting, summary statistics and safe chart-data CSV export
+- src/transform.js — aggregation, sorting, summary statistics, redacted statistics JSON and safe chart-data CSV export
 - src/profile.js — per-column completeness, distinct-count and numeric-consistency analysis
 - src/profile-csv.js — metadata-only CSV export with formula-like header escaping
 

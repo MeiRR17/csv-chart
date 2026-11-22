@@ -1,6 +1,6 @@
 import { parseCsv, columnProfile } from './src/csv.js';
 import { createChart } from './src/charts.js';
-import { prepareChartData, chartDataCsv, statisticsText } from './src/transform.js';
+import { prepareChartData, chartDataCsv, statisticsText, chartStatisticsJson } from './src/transform.js';
 import { profileDataset, profileReport } from './src/profile.js';
 import { profileCsv } from './src/profile-csv.js';
 
@@ -15,6 +15,7 @@ const chartStage = get('chart');
 const exportButton = get('export');
 const pngButton = get('export-png');
 const dataButton = get('export-data');
+const statsButton = get('export-statistics');
 const aggregationControl = get('aggregation');
 const sortControl = get('sort');
 const renderButton = get('render');
@@ -37,6 +38,7 @@ const sample = [
 let dataset = null;
 let lastSvg = '';
 let lastPrepared = null;
+let lastPlotted = null;
 let dataRevision = 0;
 let chartRevision = 0;
 
@@ -48,7 +50,8 @@ function clearChart() {
   chartRevision++;
   lastSvg = '';
   lastPrepared = null;
-  exportButton.disabled = pngButton.disabled = dataButton.disabled = true;
+  lastPlotted = null;
+  exportButton.disabled = pngButton.disabled = dataButton.disabled = statsButton.disabled = true;
   get('chart-statistics').textContent = 'Load or update chart data to view statistics.';
   chartStage.replaceChildren();
   const empty = document.createElement('div');
@@ -182,7 +185,8 @@ function renderChart() {
     chartRevision++;
     lastSvg = result.svg;
     lastPrepared = prepared;
-    exportButton.disabled = pngButton.disabled = dataButton.disabled = false;
+    lastPlotted = result.plotted;
+    exportButton.disabled = pngButton.disabled = dataButton.disabled = statsButton.disabled = false;
     get('plotted').textContent = result.plotted.toLocaleString();
     get('chart-statistics').textContent =
       (prepared.grouped ? 'Grouped categories: ' : 'Valid rows: ') +
@@ -336,6 +340,18 @@ get('export-profile-csv').addEventListener('click', () => {
 exportButton.addEventListener('click', () => {
   if (!lastSvg) return;
   download(new Blob([lastSvg], { type: 'image/svg+xml;charset=utf-8' }), 'csv-chart.svg');
+});
+
+statsButton.addEventListener('click', () => {
+  if (!lastPrepared || lastPlotted === null || !dataset) return;
+  try {
+    const report = chartStatisticsJson(lastPrepared, { plotted: lastPlotted });
+    download(new Blob([report], { type: 'application/json;charset=utf-8' }),
+      'chart-statistics.json');
+    status('Prepared-series statistics exported without source rows or labels. Numerical aggregates may still be sensitive.', 'success');
+  } catch (error) {
+    status('Could not export statistics: ' + error.message, 'error');
+  }
 });
 
 dataButton.addEventListener('click', () => {
