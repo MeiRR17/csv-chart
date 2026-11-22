@@ -157,6 +157,23 @@ export function chartDataCsv(prepared, { xLabel = 'X', yLabel = 'Y' } = {}) {
   return '\uFEFF' + output.join('\r\n') + '\r\n';
 }
 
+/**
+ * Export the exact leading prepared series that was plotted by createChart().
+ * Chart rendering selects up to its type-specific cap from prepared rows
+ * after aggregation/sorting, without reshuffling or skipping valid points.
+ * Unlike chartDataCsv(), this intentionally excludes non-plotted prepared
+ * points. The UI must provide the plotted count from the current render.
+ */
+export function plottedChartCsv(prepared, { plotted, xLabel = 'X', yLabel = 'Y' } = {}) {
+  if (!prepared || !Array.isArray(prepared.prepared) ||
+      prepared.prepared.length < 1 || prepared.prepared.length > 10_000 ||
+      !Number.isSafeInteger(plotted) || plotted < 1 ||
+      plotted > Math.min(prepared.prepared.length, 1000)) {
+    throw new TypeError('Expected the plotted count of a complete chart preview.');
+  }
+  return chartDataCsv({ prepared: prepared.prepared.slice(0, plotted) }, { xLabel, yLabel });
+}
+
 export function statisticsText(stats) {
   return 'Min ' + numberFormat.format(stats.min) +
     ' · Median ' + numberFormat.format(stats.median) +

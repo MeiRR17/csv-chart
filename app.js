@@ -1,6 +1,6 @@
 import { parseCsv, columnProfile } from './src/csv.js';
 import { createChart } from './src/charts.js';
-import { prepareChartData, chartDataCsv, statisticsText, chartStatisticsJson } from './src/transform.js';
+import { prepareChartData, chartDataCsv, plottedChartCsv, statisticsText, chartStatisticsJson } from './src/transform.js';
 import { profileDataset, profileReport } from './src/profile.js';
 import { profileCsv } from './src/profile-csv.js';
 
@@ -15,6 +15,7 @@ const chartStage = get('chart');
 const exportButton = get('export');
 const pngButton = get('export-png');
 const dataButton = get('export-data');
+const plottedButton = get('export-plotted-data');
 const statsButton = get('export-statistics');
 const aggregationControl = get('aggregation');
 const sortControl = get('sort');
@@ -51,7 +52,7 @@ function clearChart() {
   lastSvg = '';
   lastPrepared = null;
   lastPlotted = null;
-  exportButton.disabled = pngButton.disabled = dataButton.disabled = statsButton.disabled = true;
+  exportButton.disabled = pngButton.disabled = dataButton.disabled = plottedButton.disabled = statsButton.disabled = true;
   get('chart-statistics').textContent = 'Load or update chart data to view statistics.';
   chartStage.replaceChildren();
   const empty = document.createElement('div');
@@ -186,7 +187,7 @@ function renderChart() {
     lastSvg = result.svg;
     lastPrepared = prepared;
     lastPlotted = result.plotted;
-    exportButton.disabled = pngButton.disabled = dataButton.disabled = statsButton.disabled = false;
+    exportButton.disabled = pngButton.disabled = dataButton.disabled = plottedButton.disabled = statsButton.disabled = false;
     get('plotted').textContent = result.plotted.toLocaleString();
     get('chart-statistics').textContent =
       (prepared.grouped ? 'Grouped categories: ' : 'Valid rows: ') +
@@ -351,6 +352,21 @@ statsButton.addEventListener('click', () => {
     status('Prepared-series statistics exported without source rows or labels. Numerical aggregates may still be sensitive.', 'success');
   } catch (error) {
     status('Could not export statistics: ' + error.message, 'error');
+  }
+});
+
+plottedButton.addEventListener('click', () => {
+  if (!lastPrepared || !dataset || lastPlotted === null) return;
+  try {
+    const csv = plottedChartCsv(lastPrepared, {
+      plotted: lastPlotted,
+      xLabel: dataset.columns[Number(xColumn.value)],
+      yLabel: lastPrepared.dataset.columns[1],
+    });
+    download(new Blob([csv], { type: 'text/csv;charset=utf-8' }), 'plotted-chart-data.csv');
+    status('Only the ' + lastPlotted + ' points drawn on the current chart were exported. The full Chart CSV may contain more prepared rows.', 'success');
+  } catch (error) {
+    status('Plotted data export failed: ' + error.message, 'error');
   }
 });
 

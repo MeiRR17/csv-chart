@@ -13,7 +13,7 @@ Open http://localhost:8000 in your browser. A local HTTP server is recommended b
 1. Drop a CSV or TSV file onto the page, or paste CSV text, then choose **Read data**. The **Load sample data** action works without an existing file.
 2. Select Bar, Line, or Scatter. Set the X and Y columns. The Y column must contain numeric values; scatter requires numeric X coordinates too.
 3. Optionally group repeated X labels by **sum**, **average**, **count**, **minimum**, or **maximum**, and sort the chart by X or Y. Scatter plots always use raw numeric points.
-4. Enter a chart title and choose **SVG** or **PNG** for your chart image; **Chart CSV** exports the data behind the current chart. **Stats JSON** exports only numeric prepared-series statistics and completeness counts.
+4. Enter a chart title and choose **SVG** or **PNG** for your chart image; **Chart CSV** exports all prepared chart data. **Plotted CSV** exports only the points actually drawn on the SVG after chart caps are applied; **Stats JSON** exports only numeric prepared-series statistics and completeness counts.
 
 ## Features
 
@@ -29,6 +29,7 @@ Open http://localhost:8000 in your browser. A local HTTP server is recommended b
 - Export **Stats JSON** for the current prepared series: counts of source/excluded/prepared/plotted rows, aggregation and sorting modes, minimum, median, mean, P90, maximum and total. It deliberately omits raw CSV records, column names, category labels and chart title; numeric aggregates can still disclose commercially sensitive information. The report is invalidated on chart settings or source edits and never claims to summarize rows excluded by numeric parsing. Median and P90 use linear interpolation between ordered values and apply to the prepared Y series (category aggregates when grouping), not the omitted/invalid source rows.
 - Export the current chart as vector SVG or 2× resolution raster PNG (1920 × 1000) entirely in the browser.
 - Export the prepared X/Y series as a UTF-8 CSV with a BOM and formula-like text-label escaping so spreadsheet software does not execute CSV labels as formulas.
+- Export a separate **Plotted CSV** containing precisely the first 50 bar, 250 line, or 1,000 scatter *prepared points actually rendered* (or fewer, if the dataset is shorter) after aggregation/sorting. This makes it easy to compare chart artwork to its underlying displayed series, rather than incorrectly treating **Chart CSV** (all prepared points) as identical to a truncated chart. Both exports preserve the same three-column X/Y/source-row-count layout and spreadsheet formula precautions. Plotted CSV excludes points omitted for chart readability; it is not a statistics-only or anonymized export.
 - Drag and drop, file picker, editable text input, sample data, 8-row table preview and SVG download.
 - Explicit messages for malformed CSV, skipped values and point limits. Extreme finite numbers that would generate non-finite SVG axis coordinates now fail with a clear range error rather than malformed artwork.
 - No data is uploaded or transmitted by the app. Parsing and rendering happen locally.
@@ -41,7 +42,7 @@ Open http://localhost:8000 in your browser. A local HTTP server is recommended b
 - Column profiling uses the existing 10,000-row/120-column parser bounds. Uniqueness counts compare trimmed text values exactly and are *not* deduplication recommendations; format classification is not an accuracy or data-quality certification.
 - Row order is preserved by default for bar and line charts; the sort menu can change it. Scatter uses numeric X coordinates and does not permit grouping.
 - Aggregate operations include only rows with a finite numeric Y value. Count represents the count of valid numeric Y rows per X category, not every raw CSV row. Minimum and maximum select the smallest/largest finite Y value for each exact X category. Count/minimum/maximum do not calculate intermediate sums, so they do not fail solely because the sum of large values would overflow.
-- Each chart retains its readability cap (50 bar, 250 line, 1,000 scatter); the exported chart-data CSV contains **all prepared rows**, not just the first visible plotted points.
+- Each chart retains its readability cap (50 bar, 250 line, 1,000 scatter); **Chart CSV** contains **all prepared rows**, while **Plotted CSV** contains only the points drawn in the current rendered chart. Both export options are disabled when the source, column selection, chart settings or title invalidates the preview.
 - Exporting chart data may include confidential information if your category labels are sensitive; review downloads before sharing. The column profile excludes **cell values** but includes **column names**, which may still be sensitive.
 - When a file load finishes after the user has edited the source or selected another file, its stale result is ignored. Editing the chart title immediately invalidates prior SVG/PNG/chart-data exports even before the title field loses focus; the completed title is rendered on change. Changing or clearing the chart also cancels any in-flight PNG image conversion so an outdated chart cannot be exported by mistake.
 - This initial implementation has not been run through the owner's centralized test cycle.
@@ -53,7 +54,7 @@ Open http://localhost:8000 in your browser. A local HTTP server is recommended b
 - app.js — local file reading, interactions, data preview and SVG export
 - src/csv.js — CSV parser, delimiter detection, numeric profiling
 - src/charts.js — accessible, self-contained SVG chart renderer
-- src/transform.js — aggregation, sorting, summary statistics, redacted statistics JSON and safe chart-data CSV export
+- src/transform.js — aggregation, sorting, summary statistics, redacted statistics JSON and safe full-series/plotted-only chart CSV exports
 - src/profile.js — per-column completeness, distinct-count and numeric-consistency analysis
 - src/profile-csv.js — metadata-only CSV export with formula-like header escaping
 
