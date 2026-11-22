@@ -27,14 +27,26 @@ function bounds(values, includeZero) {
   }
   return [low, high];
 }
-function coordinate(value, low, high, total) { return (value - low) * total / (high - low); }
+// Normalize before multiplying by the viewport. The former expression
+// (value - low) * total / span can overflow to Infinity for a finite number
+// such as 1e308, even when both axis bounds and their span are finite.
+function coordinate(value, low, high, total) {
+  const ratio = (value - low) / (high - low);
+  const mapped = ratio * total;
+  if (!Number.isFinite(mapped)) {
+    throw new RangeError('Unable to map chart values to finite SVG coordinates.');
+  }
+  return mapped;
+}
 function textNode(x, y, value, cls = '', anchor = 'middle') {
   return '<text x="' + x + '" y="' + y + '" text-anchor="' + anchor + '" class="' + cls + '">' + xml(value) + '</text>';
 }
 function axisGrid(yLow, yHigh) {
   let nodes = '';
   for (let i = 0; i <= 5; i++) {
-    const value = yLow + (yHigh - yLow) * i / 5;
+    // Multiply by a bounded [0,1] fraction, not by i (up to 5) first.
+    // The old multiplication could overflow before the final division.
+    const value = yLow + (yHigh - yLow) * (i / 5);
     const y = PAD.top + GRAPH_H * (1 - i / 5);
     nodes += '<line x1="' + PAD.left + '" y1="' + y.toFixed(2) + '" x2="' + (WIDTH - PAD.right) + '" y2="' + y.toFixed(2) + '" class="gridline"/>';
     nodes += textNode(PAD.left - 13, y + 5, formatNumber(value), 'tick', 'end');
