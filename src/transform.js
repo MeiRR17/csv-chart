@@ -1,6 +1,6 @@
 import { numericValue } from './csv.js';
 
-const AGGREGATES = new Set(['none', 'sum', 'average', 'count']);
+const AGGREGATES = new Set(['none', 'sum', 'average', 'count', 'minimum', 'maximum']);
 const SORTS = new Set(['source', 'x-asc', 'x-desc', 'y-asc', 'y-desc']);
 const numberFormat = new Intl.NumberFormat('en-US', { maximumFractionDigits: 3 });
 
@@ -55,17 +55,25 @@ export function prepareChartData(dataset, { type, xIndex, yIndex, aggregate = 'n
     for (const item of valid) {
       if (!grouped.has(item.x)) {
         grouped.set(item.x, {
-          x: item.x, sum: 0, count: 0, sourceIndex: item.sourceIndex,
+          x: item.x, sum: 0, count: 0, minimum: item.y, maximum: item.y,
+          sourceIndex: item.sourceIndex,
         });
       }
       const group = grouped.get(item.x);
-      group.sum += item.y;
       group.count++;
-      if (!Number.isFinite(group.sum)) throw new RangeError('Aggregated sum exceeds the numeric range.');
+      group.minimum = Math.min(group.minimum, item.y);
+      group.maximum = Math.max(group.maximum, item.y);
+      // Count/min/max do not need a sum. Avoid rejecting those otherwise
+      // valid aggregations when large numeric Y values would overflow it.
+      if (aggregate === 'sum' || aggregate === 'average') {
+        group.sum += item.y;
+        if (!Number.isFinite(group.sum)) throw new RangeError('Aggregated sum exceeds the numeric range.');
+      }
     }
     prepared = Array.from(grouped.values(), group => ({
       x: group.x,
-      y: aggregate === 'sum' ? group.sum : aggregate === 'average' ? group.sum / group.count : group.count,
+      y: aggregate === 'sum' ? group.sum : aggregate === 'average' ? group.sum / group.count :
+        aggregate === 'minimum' ? group.minimum : aggregate === 'maximum' ? group.maximum : group.count,
       sourceIndex: group.sourceIndex,
       count: group.count,
     }));
@@ -103,6 +111,7 @@ export function prepareChartData(dataset, { type, xIndex, yIndex, aggregate = 'n
     dataset.columns[xIndex],
     aggregate === 'none' ? dataset.columns[yIndex] : ({
       sum: 'Sum of ', average: 'Average of ', count: 'Count of ',
+      minimum: 'Minimum of ', maximum: 'Maximum of ',
     })[aggregate] + dataset.columns[yIndex],
   ];
   return {

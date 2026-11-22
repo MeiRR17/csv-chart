@@ -12,7 +12,7 @@ Open http://localhost:8000 in your browser. A local HTTP server is recommended b
 
 1. Drop a CSV or TSV file onto the page, or paste CSV text, then choose **Read data**. The **Load sample data** action works without an existing file.
 2. Select Bar, Line, or Scatter. Set the X and Y columns. The Y column must contain numeric values; scatter requires numeric X coordinates too.
-3. Optionally group repeated X labels by **sum**, **average**, or **count**, and sort the chart by X or Y. Scatter plots always use raw numeric points.
+3. Optionally group repeated X labels by **sum**, **average**, **count**, **minimum**, or **maximum**, and sort the chart by X or Y. Scatter plots always use raw numeric points.
 4. Enter a chart title and choose **SVG** or **PNG** for your chart image; **Chart CSV** exports the data behind the current chart.
 
 ## Features
@@ -24,7 +24,7 @@ Open http://localhost:8000 in your browser. A local HTTP server is recommended b
 - Download a **column profile** as JSON or spreadsheet-compatible CSV with column names, counts, completeness percentages and inferred classifications; no source cell values are included. Formula-like column headers are escaped in the CSV to reduce spreadsheet injection risk.
 - Responsive, accessible chart studio with bar (up to 50 points), line (up to 250), and scatter (up to 1,000) charts.
 - SVG axis labels, grid lines, point values and chart title, with XML-escaped data labels.
-- Non-mutating chart-data preparation with grouping by exact X labels, sum/average/count aggregations and optional sort by X or Y.
+- Non-mutating chart-data preparation with grouping by exact X labels, sum/average/count/minimum/maximum aggregations and optional sort by X or Y.
 - Prepared-series statistics: number of categories or records, minimum, **median**, mean, **90th percentile (P90)** and maximum. Median and P90 use linear interpolation between ordered values and apply to the prepared Y series (category aggregates when grouping), not the omitted/invalid source rows.
 - Export the current chart as vector SVG or 2× resolution raster PNG (1920 × 1000) entirely in the browser.
 - Export the prepared X/Y series as a UTF-8 CSV with a BOM and formula-like text-label escaping so spreadsheet software does not execute CSV labels as formulas.
@@ -39,7 +39,7 @@ Open http://localhost:8000 in your browser. A local HTTP server is recommended b
 - Numeric cells accept finite decimal notation with a period decimal separator, including scientific notation. Currency symbols and locale-formatted values are not silently coerced.
 - Column profiling uses the existing 10,000-row/120-column parser bounds. Uniqueness counts compare trimmed text values exactly and are *not* deduplication recommendations; format classification is not an accuracy or data-quality certification.
 - Row order is preserved by default for bar and line charts; the sort menu can change it. Scatter uses numeric X coordinates and does not permit grouping.
-- Aggregate operations include only rows with a numeric Y value. Count represents the count of valid numeric Y rows per X category, not every raw CSV row.
+- Aggregate operations include only rows with a finite numeric Y value. Count represents the count of valid numeric Y rows per X category, not every raw CSV row. Minimum and maximum select the smallest/largest finite Y value for each exact X category. Count/minimum/maximum do not calculate intermediate sums, so they do not fail solely because the sum of large values would overflow.
 - Each chart retains its readability cap (50 bar, 250 line, 1,000 scatter); the exported chart-data CSV contains **all prepared rows**, not just the first visible plotted points.
 - Exporting chart data may include confidential information if your category labels are sensitive; review downloads before sharing. The column profile excludes **cell values** but includes **column names**, which may still be sensitive.
 - When a file load finishes after the user has edited the source or selected another file, its stale result is ignored. Changing or clearing the chart also cancels any in-flight PNG image conversion so an outdated chart cannot be exported by mistake.
