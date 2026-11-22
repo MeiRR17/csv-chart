@@ -196,7 +196,18 @@ function renderChart() {
       (prepared.discarded ? ' · Excluded ' + prepared.discarded.toLocaleString() + ' invalid rows' : '');
     const parts = ['Chart created from ' + result.plotted.toLocaleString() + ' data points.'];
     if (prepared.grouped) parts.push('Grouped numeric Y values using ' + aggregate + '.');
-    if (prepared.discarded) parts.push(prepared.discarded.toLocaleString() + ' rows skipped (non-numeric or missing values).');
+    if (prepared.discarded) {
+      const reasons = prepared.excludedReasons;
+      const detail = [
+        ['missing Y', reasons.missingY],
+        ['non-numeric Y', reasons.nonNumericY],
+        ['missing scatter X', reasons.missingX],
+        ['non-numeric scatter X', reasons.nonNumericX],
+      ].filter(([, count]) => count > 0)
+        .map(([label, count]) => count.toLocaleString() + ' ' + label);
+      parts.push(prepared.discarded.toLocaleString() +
+        ' rows excluded: ' + detail.join(', ') + '.');
+    }
     if (result.capped) parts.push(result.capped.toLocaleString() + ' prepared points omitted to keep the chart readable.');
     status(parts.join(' '), 'success');
   } catch (error) {

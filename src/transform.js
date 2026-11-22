@@ -29,12 +29,26 @@ export function prepareChartData(dataset, { type, xIndex, yIndex, aggregate = 'n
   }
 
   const valid = [];
+  // Exclusive rejection categories: Y takes precedence over X, since a row
+  // with an unusable Y would be excluded even for a bar/line chart.
+  // This is a diagnostic of parsing, never a claim about source data quality.
+  const excludedReasons = {
+    missingY: 0, nonNumericY: 0, missingX: 0, nonNumericX: 0,
+  };
   let discarded = 0;
   for (let index = 0; index < dataset.rows.length; index++) {
     const row = dataset.rows[index];
+    const rawY = String(row[yIndex] ?? '').trim();
     const y = numericValue(row[yIndex]);
-    const x = type === 'scatter' ? numericValue(row[xIndex]) : String(row[xIndex] ?? '').trim();
-    if (y === null || (type === 'scatter' && x === null)) {
+    if (y === null) {
+      excludedReasons[rawY === '' ? 'missingY' : 'nonNumericY']++;
+      discarded++;
+      continue;
+    }
+    const rawX = String(row[xIndex] ?? '').trim();
+    const x = type === 'scatter' ? numericValue(row[xIndex]) : rawX;
+    if (type === 'scatter' && x === null) {
+      excludedReasons[rawX === '' ? 'missingX' : 'nonNumericX']++;
       discarded++;
       continue;
     }
@@ -118,6 +132,7 @@ export function prepareChartData(dataset, { type, xIndex, yIndex, aggregate = 'n
     dataset: { columns, rows: dataRows },
     prepared,
     discarded,
+    excludedReasons,
     sourceCount: dataset.rows.length,
     grouped: aggregate !== 'none',
     aggregate,
@@ -198,6 +213,14 @@ export function chartStatisticsJson(prepared, { plotted } = {}) {
       prepared.grouped !== (prepared.aggregate !== 'none')) {
     throw new TypeError('Expected valid prepared chart data.');
   }
+  const reasons = prepared.excludedReasons;
+  const keys = ['missingY', 'nonNumericY', 'missingX', 'nonNumericX'];
+  if (!reasons || typeof reasons !== 'object' ||
+      !keys.every(key => Number.isSafeInteger(reasons[key]) &&
+        reasons[key] >= 0 && reasons[key] <= prepared.sourceCount) ||
+      keys.reduce((total, key) => total + reasons[key], 0) !== prepared.discarded) {
+    throw new TypeError('Excluded-row reason counts do not reconcile.');
+  }
   const stats = prepared.statistics;
   const preparedPoints = prepared.prepared.length;
   if (preparedPoints < 1 || preparedPoints > prepared.sourceCount ||
@@ -211,6 +234,12 @@ export function chartStatisticsJson(prepared, { plotted } = {}) {
     format: 'csv-chart-series-statistics-v1',
     sourceRows: prepared.sourceCount,
     excludedRows: prepared.discarded,
+    excludedReasons: {
+      missingY: reasons.missingY,
+      nonNumericY: reasons.nonNumericY,
+      missingX: reasons.missingX,
+      nonNumericX: reasons.nonNumericX,
+    },
     preparedPoints,
     plottedPoints: plotted,
     omittedFromChart: preparedPoints - plotted,
@@ -220,6 +249,6 @@ export function chartStatisticsJson(prepared, { plotted } = {}) {
       min: stats.min, median: stats.median, mean: stats.mean,
       p90: stats.p90, max: stats.max, total: stats.total,
     },
-    advisory: 'Statistics describe the prepared Y series; grouping changes its meaning. No labels or source records are included. Numeric aggregates may still be sensitive.',
+    advisory: 'Statistics describe the prepared Y series; grouping changes its meaning. Exclusion reasons are mutually exclusive: Y is checked before scatter X. Counts omit labels and source rows but can still be sensitive.',
   }, null, 2) + '\n';
 }
