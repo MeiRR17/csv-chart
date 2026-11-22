@@ -3,6 +3,7 @@ import { createChart } from './src/charts.js';
 import { prepareChartData, chartDataCsv, plottedChartCsv, statisticsText, chartStatisticsJson } from './src/transform.js';
 import { profileDataset, profileReport } from './src/profile.js';
 import { profileCsv } from './src/profile-csv.js';
+import { plottedScatterCorrelation } from './src/correlation.js';
 
 const get = id => document.getElementById(id);
 const source = get('source');
@@ -193,7 +194,15 @@ function renderChart() {
       (prepared.grouped ? 'Grouped categories: ' : 'Valid rows: ') +
       prepared.statistics.count.toLocaleString() + ' · ' +
       statisticsText(prepared.statistics) +
-      (prepared.discarded ? ' · Excluded ' + prepared.discarded.toLocaleString() + ' invalid rows' : '');
+      (prepared.discarded ? ' · Excluded ' + prepared.discarded.toLocaleString() + ' invalid rows' : '') +
+      (type === 'scatter' ? (() => {
+        const correlation = plottedScatterCorrelation(prepared, result.plotted);
+        return ' · Plotted Pearson r: ' +
+          (correlation.coefficient === null
+            ? 'undefined (' + correlation.reason.replaceAll('_', ' ') + ')'
+            : correlation.coefficient.toFixed(3)) +
+          ' for ' + correlation.points.toLocaleString() + ' plotted points (linear association, not causation)';
+      })() : '');
     const parts = ['Chart created from ' + result.plotted.toLocaleString() + ' data points.'];
     if (prepared.grouped) parts.push('Grouped numeric Y values using ' + aggregate + '.');
     if (prepared.discarded) {

@@ -1,4 +1,5 @@
 import { numericValue } from './csv.js';
+import { plottedScatterCorrelation } from './correlation.js';
 
 const AGGREGATES = new Set(['none', 'sum', 'average', 'count', 'minimum', 'maximum']);
 const SORTS = new Set(['source', 'x-asc', 'x-desc', 'y-asc', 'y-desc']);
@@ -135,6 +136,7 @@ export function prepareChartData(dataset, { type, xIndex, yIndex, aggregate = 'n
     excludedReasons,
     sourceCount: dataset.rows.length,
     grouped: aggregate !== 'none',
+    type,
     aggregate,
     sort,
     statistics: {
@@ -209,6 +211,7 @@ export function chartStatisticsJson(prepared, { plotted } = {}) {
       prepared.sourceCount < 1 || !Number.isSafeInteger(prepared.discarded) ||
       prepared.discarded < 0 || prepared.discarded >= prepared.sourceCount ||
       !AGGREGATES.has(prepared.aggregate) || !SORTS.has(prepared.sort) ||
+      !['bar', 'line', 'scatter'].includes(prepared.type) ||
       typeof prepared.grouped !== 'boolean' ||
       prepared.grouped !== (prepared.aggregate !== 'none')) {
     throw new TypeError('Expected valid prepared chart data.');
@@ -249,6 +252,9 @@ export function chartStatisticsJson(prepared, { plotted } = {}) {
       min: stats.min, median: stats.median, mean: stats.mean,
       p90: stats.p90, max: stats.max, total: stats.total,
     },
-    advisory: 'Statistics describe the prepared Y series; grouping changes its meaning. Exclusion reasons are mutually exclusive: Y is checked before scatter X. Counts omit labels and source rows but can still be sensitive.',
+    ...(prepared.type === 'scatter'
+      ? { plottedScatterCorrelation: plottedScatterCorrelation(prepared, plotted) }
+      : {}),
+    advisory: 'Y statistics describe the full prepared series and grouping changes their meaning. For scatter only, Pearson r describes solely the first plotted points (max 1,000); correlation is not causation or statistical significance. Exclusion reasons are exclusive. Aggregate values may be sensitive.',
   }, null, 2) + '\n';
 }
