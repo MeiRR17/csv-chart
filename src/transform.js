@@ -201,6 +201,89 @@ export function statisticsText(stats) {
 
 
 /**
+ * Full machine-readable prepared-series snapshot. Unlike chartStatisticsJson,
+ * this intentionally includes category labels and every prepared X/Y point.
+ * It never includes unrelated source columns or original raw row objects.
+ */
+export function chartDataJson(prepared, {
+  plotted, xLabel = 'X', yLabel = 'Y', title = '',
+} = {}) {
+  if (!prepared || typeof prepared !== 'object' || !Array.isArray(prepared.prepared) ||
+      !Array.isArray(prepared.dataset?.columns) || prepared.dataset.columns.length !== 2 ||
+      !Array.isArray(prepared.dataset.rows) ||
+      !Number.isSafeInteger(prepared.sourceCount) || prepared.sourceCount < 1 ||
+      !Number.isSafeInteger(prepared.discarded) || prepared.discarded < 0 ||
+      prepared.discarded >= prepared.sourceCount ||
+      prepared.prepared.length < 1 || prepared.prepared.length > 10_000 ||
+      prepared.prepared.length !== prepared.dataset.rows.length ||
+      !Number.isSafeInteger(plotted) || plotted < 1 ||
+      plotted > Math.min(prepared.prepared.length, 1000) ||
+      !AGGREGATES.has(prepared.aggregate) || !SORTS.has(prepared.sort) ||
+      !['bar', 'line', 'scatter'].includes(prepared.type) ||
+      typeof prepared.grouped !== 'boolean' ||
+      prepared.grouped !== (prepared.aggregate !== 'none')) {
+    throw new TypeError('Expected a complete prepared chart-series snapshot.');
+  }
+  if (typeof xLabel !== 'string' || typeof yLabel !== 'string' ||
+      typeof title !== 'string' || title.length > 90) {
+    throw new TypeError('Chart labels and title must be bounded text.');
+  }
+  const reasons = prepared.excludedReasons;
+  const keys = ['missingY', 'nonNumericY', 'missingX', 'nonNumericX'];
+  if (!reasons || !keys.every(key => Number.isSafeInteger(reasons[key]) &&
+      reasons[key] >= 0 && reasons[key] <= prepared.sourceCount) ||
+      keys.reduce((sum, key) => sum + reasons[key], 0) !== prepared.discarded) {
+    throw new TypeError('Excluded-row reasons do not reconcile with the source row count.');
+  }
+  const points = prepared.prepared.map((point, index) => {
+    if (!point || (!['string', 'number'].includes(typeof point.x)) ||
+        (typeof point.x === 'number' && !Number.isFinite(point.x)) ||
+        typeof point.y !== 'number' || !Number.isFinite(point.y) ||
+        !Number.isSafeInteger(point.count) || point.count < 1 ||
+        !Number.isSafeInteger(point.sourceIndex) || point.sourceIndex < 0 ||
+        point.sourceIndex >= prepared.sourceCount ||
+        !Array.isArray(prepared.dataset.rows[index]) ||
+        String(prepared.dataset.rows[index][0]) !== String(point.x) ||
+        String(prepared.dataset.rows[index][1]) !== String(point.y)) {
+      throw new TypeError('Prepared chart point contains invalid or inconsistent values.');
+    }
+    return {
+      x: point.x,
+      y: point.y,
+      sourceRowCount: point.count,
+      firstSourceRow: point.sourceIndex + 1,
+      plotted: index < plotted,
+    };
+  });
+  return JSON.stringify({
+    format: 'csv-chart-prepared-series-v1',
+    chart: {
+      title,
+      type: prepared.type,
+      xLabel,
+      yLabel,
+      aggregation: prepared.aggregate,
+      sort: prepared.sort,
+    },
+    completeness: {
+      sourceRows: prepared.sourceCount,
+      excludedRows: prepared.discarded,
+      excludedReasons: {
+        missingY: reasons.missingY,
+        nonNumericY: reasons.nonNumericY,
+        missingX: reasons.missingX,
+        nonNumericX: reasons.nonNumericX,
+      },
+      preparedPoints: points.length,
+      plottedPoints: plotted,
+      omittedFromChart: points.length - plotted,
+    },
+    points,
+    advisory: 'Includes prepared category labels and X/Y values. It omits unrelated source columns and raw row objects, but is not anonymized. Grouped points include their contributing-row count and first source-row index. The plotted flag identifies the leading points used by the current chart renderer.',
+  }, null, 2) + '\\n';
+}
+
+/**
  * Privacy-reduced export of statistics for the prepared chart series.
  * No source rows, X values, column names, text labels or chart title.
  * Metrics can themselves be sensitive and must be reviewed before sharing.
