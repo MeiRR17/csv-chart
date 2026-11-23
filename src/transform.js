@@ -280,7 +280,7 @@ export function chartDataJson(prepared, {
     },
     points,
     advisory: 'Includes prepared category labels and X/Y values. It omits unrelated source columns and raw row objects, but is not anonymized. Grouped points include their contributing-row count and first source-row index. The plotted flag identifies the leading points used by the current chart renderer.',
-  }, null, 2) + '\\n';
+  }, null, 2) + '\n';
 }
 
 /**
