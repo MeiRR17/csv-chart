@@ -1,6 +1,6 @@
 import { parseCsv, columnProfile } from './src/csv.js';
 import { createChart } from './src/charts.js';
-import { prepareChartData, chartDataCsv, plottedChartCsv, statisticsText, chartStatisticsJson } from './src/transform.js';
+import { prepareChartData, chartDataCsv, chartDataJson, plottedChartCsv, statisticsText, chartStatisticsJson } from './src/transform.js';
 import { profileDataset, profileReport } from './src/profile.js';
 import { profileCsv } from './src/profile-csv.js';
 import { plottedScatterCorrelation } from './src/correlation.js';
@@ -18,6 +18,7 @@ const pngButton = get('export-png');
 const dataButton = get('export-data');
 const plottedButton = get('export-plotted-data');
 const statsButton = get('export-statistics');
+const jsonDataButton = get('export-json-data');
 const aggregationControl = get('aggregation');
 const sortControl = get('sort');
 const renderButton = get('render');
@@ -53,7 +54,7 @@ function clearChart() {
   lastSvg = '';
   lastPrepared = null;
   lastPlotted = null;
-  exportButton.disabled = pngButton.disabled = dataButton.disabled = plottedButton.disabled = statsButton.disabled = true;
+  exportButton.disabled = pngButton.disabled = dataButton.disabled = plottedButton.disabled = statsButton.disabled = jsonDataButton.disabled = true;
   get('chart-statistics').textContent = 'Load or update chart data to view statistics.';
   chartStage.replaceChildren();
   const empty = document.createElement('div');
@@ -73,7 +74,7 @@ function resetData() {
   get('profile-summary').textContent = 'Read a CSV to inspect column completeness and numeric consistency.';
   xColumn.disabled = yColumn.disabled = renderButton.disabled = true;
   aggregationControl.disabled = sortControl.disabled = true;
-  exportButton.disabled = pngButton.disabled = dataButton.disabled = true;
+  exportButton.disabled = pngButton.disabled = dataButton.disabled = jsonDataButton.disabled = true;
   get('rows').textContent = get('columns').textContent = '—';
   get('table-count').textContent = 'No data loaded';
   get('preview-table').querySelector('thead').replaceChildren();
@@ -188,7 +189,7 @@ function renderChart() {
     lastSvg = result.svg;
     lastPrepared = prepared;
     lastPlotted = result.plotted;
-    exportButton.disabled = pngButton.disabled = dataButton.disabled = plottedButton.disabled = statsButton.disabled = false;
+    exportButton.disabled = pngButton.disabled = dataButton.disabled = plottedButton.disabled = statsButton.disabled = jsonDataButton.disabled = false;
     get('plotted').textContent = result.plotted.toLocaleString();
     get('chart-statistics').textContent =
       (prepared.grouped ? 'Grouped categories: ' : 'Valid rows: ') +
@@ -387,6 +388,23 @@ plottedButton.addEventListener('click', () => {
     status('Only the ' + lastPlotted + ' points drawn on the current chart were exported. The full Chart CSV may contain more prepared rows.', 'success');
   } catch (error) {
     status('Plotted data export failed: ' + error.message, 'error');
+  }
+});
+
+jsonDataButton.addEventListener('click', () => {
+  if (!lastPrepared || !dataset || lastPlotted === null) return;
+  try {
+    const report = chartDataJson(lastPrepared, {
+      plotted: lastPlotted,
+      xLabel: dataset.columns[Number(xColumn.value)],
+      yLabel: lastPrepared.dataset.columns[1],
+      title: get('chart-title').value.trim(),
+    });
+    download(new Blob([report], { type: 'application/json;charset=utf-8' }),
+      'chart-data.json');
+    status('Full prepared-series JSON exported. It contains category labels and X/Y values; review before sharing.', 'success');
+  } catch (error) {
+    status('Chart data JSON export failed: ' + error.message, 'error');
   }
 });
 
